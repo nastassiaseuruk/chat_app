@@ -1,0 +1,8 @@
+Flask==0.12.2
+Flask-SQLAlchemy==2.3.2
+Flask-SocketIO==2.9.3
+Celery==4.1.0
+psycopg2==2.7.3.2
+Flask-Migrate==2.1.1
+flask-script==2.0.6
+Flask-User==0.6.19
