@@ -6,12 +6,12 @@
     $(document).ready(function () {
         var socket = io.connect('http://127.0.0.1:5000/');
 
-        socket.on('connect', function () {
-            socket.send('Вошел новый пользователь')
-        });
+{#        socket.on('connect', function () {#}
+{#            socket.send('Вошел новый пользователь')#}
+{#        });#}
 
         socket.on('message', function (msg) {
-            $("#messages").append('<li>' + msg + '</li>');
+            $("#messages").append('<li>' + msg +  '</li>');
         });
 
         $('#sendbutton').on('click', function () {
@@ -22,10 +22,17 @@
     }) ;
 </script>
     <ul id="messages">
-    {% for msg in massages %}
-        <b>{{ msg.user }}</b> : {{ msg.text }}
+    {% for msg in messages %}
+     <li> <b>{{ msg.user }} </b> : {{ msg.message }} </li> {{ msg.published }}
+       <button> Удалить {{ msg.delete }}</button>
     {% endfor %}
     </ul>
     <input type="text" id="myMessage">
     <button id="sendbutton">Отправить</button>
+
+    {% for user_online in users_online %}
+     {{ user_online.username }}
+    {% endfor %}
+
+
 {% endblock %}
