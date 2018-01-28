@@ -24,7 +24,9 @@
     <ul id="messages">
     {% for msg in messages %}
      <li> <b>{{ msg.user }} </b> : {{ msg.message }} </li> {{ msg.published }}
-       <button> Удалить {{ msg.delete }}</button>
+        {% if msg.author == current_user.id %}
+       <a href="{{ url_for('message_delete', id=msg.id ) }}">Удалить</a>
+        {% endif %}
     {% endfor %}
     </ul>
     <input type="text" id="myMessage">

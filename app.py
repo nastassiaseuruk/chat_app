@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from flask import Flask, render_template, request, url_for, redirect, session
 from flask_user import login_required, SQLAlchemyAdapter, UserManager, UserMixin
 from flask_socketio import SocketIO, send
@@ -16,7 +17,8 @@ POSTGRES = {
     'pw': '123456',
     'db': 'chat_db',
     'host': 'localhost',
-    'port': '5432'
+    'port': '5432',
+    'encoding': 'UTF8'
 
 }
 app.config['SECRET_KEY'] = 'jjjj'
@@ -43,8 +45,6 @@ socketio = SocketIO(app)
 
 
 class User(db.Model, UserMixin):
-    # __tablename__ = 'users'
-
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False, server_default=" ")
@@ -56,17 +56,16 @@ class User(db.Model, UserMixin):
 
 
 class Message(db.Model):
-    # __tablename__ = 'messages'
-
     id = db.Column(db.Integer, primary_key=True)
     message = db.Column(db.Text, nullable=False)
     author = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     published = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    def delete_msg(self):
-        message_to_delete = Message.query.get(self.id)
-        db.session.delete(message_to_delete)
-        db.session.commit()
+
+class FilteredWords(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+    word = db.Column(db.String, nullable=False)
 
 
 db_adapter = SQLAlchemyAdapter(db, User)
@@ -76,12 +75,32 @@ db.init_app(app)
 
 
 @app.route('/')
-@login_required
 def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('chat'))
+    else:
+        return redirect(url_for('/user/sign-in')) #посмотреть название вью урла
+
+
+@app.route('/chat')
+@login_required
+def chat():
     messages = Message.query.all()
     user = User.query.filter_by(username=current_user.username).first()
-    users_online = User.query.filter_by(active=True).all()
+    users = User.query.all()
+    users_online = []
+    for user in users:
+        if user in session:
+            users_online.append(user)
     return render_template('chat_app.html', messages=messages, user=user, users_online=users_online)
+
+
+@app.route('/message/<id>')
+def message_delete(id):
+    message_to_delete = Message.query.get(id)
+    db.session.delete(message_to_delete)
+    db.session.commit()
+    return redirect('chat')
 
 
 @celery.on_after_configure.connect
@@ -93,7 +112,7 @@ def setup_periodic_tasks(sender, **kwargs):
     )
 
 
-# @celery.task(name='app.delete_old_messages')
+@celery.task(name='app.delete_old_messages')
 def delete_old_messages():
     since = datetime.now() - timedelta(hours=24)
     messages_to_delete = Message.query.filter_by(Message.published < since).all()
